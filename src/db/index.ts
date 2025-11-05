@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema';
 import path from 'path';
 import fs from 'fs';
+import { logger } from '../lib/logger';
 
 // Ensure data directory exists
 const dataDir = path.join(process.cwd(), 'data');
@@ -21,6 +22,8 @@ export const db = drizzle(sqlite, { schema });
 // Initialize default data
 export async function initializeDatabase() {
   try {
+    logger.info('Initializing database...');
+
     // Insert default document types
     const defaultDocTypes = [
       { name: 'Invoice', description: 'Tax invoices and bills', isMandatory: false },
@@ -35,13 +38,20 @@ export async function initializeDatabase() {
     ];
 
     for (const docType of defaultDocTypes) {
-      await db.insert(schema.documentTypes).values(docType).onConflictDoNothing();
+      try {
+        await db.insert(schema.documentTypes).values(docType);
+      } catch (error: any) {
+        // Ignore unique constraint errors (document type already exists)
+        if (!error.message?.includes('UNIQUE')) {
+          throw error;
+        }
+      }
     }
 
     // Insert subscription plans
     const plans = [
       {
-        name: 'starter',
+        name: 'starter' as const,
         displayName: 'Starter',
         price: 999,
         maxClients: 20,
@@ -55,7 +65,7 @@ export async function initializeDatabase() {
         isActive: true,
       },
       {
-        name: 'pro',
+        name: 'pro' as const,
         displayName: 'Pro',
         price: 2999,
         maxClients: 50,
@@ -71,7 +81,7 @@ export async function initializeDatabase() {
         isActive: true,
       },
       {
-        name: 'enterprise',
+        name: 'enterprise' as const,
         displayName: 'Enterprise',
         price: 29999,
         maxClients: null,
@@ -91,12 +101,22 @@ export async function initializeDatabase() {
     ];
 
     for (const plan of plans) {
-      await db.insert(schema.subscriptionPlans).values(plan).onConflictDoNothing();
+      try {
+        await db.insert(schema.subscriptionPlans).values(plan);
+      } catch (error: any) {
+        // Ignore unique constraint errors (plan already exists)
+        if (!error.message?.includes('UNIQUE')) {
+          throw error;
+        }
+      }
     }
 
-    console.log('Database initialized successfully');
+    logger.info('✓ Database initialized successfully');
   } catch (error) {
-    console.error('Error initializing database:', error);
+    logger.error('Error initializing database:', error);
     throw error;
   }
 }
+
+// Export sqlite instance for direct queries if needed
+export { sqlite };
