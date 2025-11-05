@@ -20,12 +20,11 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { dashboardService } from '../services/dashboard.service';
-import { geminiService } from '../services/gemini.service';
+import { dashboardAPI } from '../api/dashboard.api';
+import { geminiAPI } from '../api/gemini.api';
 import StatsCard from '../components/dashboard/StatsCard';
 import ClientCard from '../components/dashboard/ClientCard';
 import ChartCard from '../components/dashboard/ChartCard';
-import { logger } from '../lib/logger';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -34,27 +33,27 @@ export default function Dashboard() {
   // Fetch dashboard statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: () => dashboardService.getStats(),
+    queryFn: () => dashboardAPI.getStats(),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Fetch client summaries
   const { data: clientSummaries, isLoading: clientsLoading } = useQuery({
     queryKey: ['client-summaries'],
-    queryFn: () => dashboardService.getClientSummaries(5),
+    queryFn: () => dashboardAPI.getClientSummaries(5),
     refetchInterval: 60000, // Refetch every minute
   });
 
   // Fetch document counts by type
   const { data: documentCounts, isLoading: documentsLoading } = useQuery({
     queryKey: ['document-counts'],
-    queryFn: () => dashboardService.getDocumentCountsByType(),
+    queryFn: () => dashboardAPI.getDocumentCountsByType(),
   });
 
   // Fetch upload trends
   const { data: uploadTrends, isLoading: trendsLoading } = useQuery({
     queryKey: ['upload-trends'],
-    queryFn: () => dashboardService.getUploadTrends(7),
+    queryFn: () => dashboardAPI.getUploadTrends(7),
   });
 
   // Fetch AI insights
@@ -64,19 +63,19 @@ export default function Dashboard() {
       try {
         // Prepare data for AI analysis
         const [clients, documents, tasks] = await Promise.all([
-          dashboardService.getClientSummaries(),
-          dashboardService.getDocumentCountsByType(),
-          dashboardService.getStats(),
+          dashboardAPI.getClientSummaries(),
+          dashboardAPI.getDocumentCountsByType(),
+          dashboardAPI.getStats(),
         ]);
 
         // Generate insights using Gemini
-        return await geminiService.generateInsights({
+        return await geminiAPI.generateInsights({
           clients: clients as any[],
           documents: documents as any[],
           tasks: [{ status: 'pending' }] as any[],
         });
       } catch (error) {
-        logger.error('Error generating AI insights:', error);
+        console.error('Error generating AI insights:', error);
         return [
           'Upload activity is looking good this week!',
           'Consider following up with inactive clients',

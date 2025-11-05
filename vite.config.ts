@@ -16,5 +16,27 @@ export default defineConfig({
   build: {
     outDir: 'dist/react',
     emptyOutDir: true,
+    rollupOptions: {
+      external: [
+        // Exclude Node.js built-in modules
+        'fs',
+        'path',
+        'crypto',
+        'util',
+        'stream',
+        'events',
+        // Exclude Node.js-only dependencies
+        'better-sqlite3',
+        'pdf-parse',
+        'tesseract.js',
+      ],
+    },
+  },
+  optimizeDeps: {
+    exclude: [
+      'better-sqlite3',
+      'pdf-parse',
+      'tesseract.js',
+    ],
   },
 });
